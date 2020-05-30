@@ -43,8 +43,8 @@ def march(origins: torch.Tensor, directions: torch.Tensor, transform: torch.Tens
             transformed_rays[:, :3] += directions * distances
             if debug:
                 points += transformed_rays.tolist()
-            if mask.all():
-                break
+        if mask.all():
+            break
         if debug:
             points_ = np.array(points)
             vis = open3d.geometry.PointCloud(
@@ -59,20 +59,26 @@ def march(origins: torch.Tensor, directions: torch.Tensor, transform: torch.Tens
 
 def main():
     sphere_group = SphereGroup()
-    sphere_group.add_sphere([0, 0, 500], 200)
+    sphere_group.add_sphere([0, 0, 500], 20)
     torch.cuda.set_device(0)
     rays = torch.Tensor([
         [x, y, 0, 1]
-        for x in range(0, 800)
-        for y in range(0, 600)
+        for x in range(-64, 64)
+        for y in range(-64, 64)
     ])
 
     directions = torch.zeros_like(rays)
     directions = directions[:, :3]
     directions[:, 2] = 1
 
-    res = march(rays, directions, torch.eye(4, 4), [sphere_group], debug=False, maximum_iterations=50)
-    res = res[:, :2]
+    res = march(rays, directions, torch.eye(4, 4), [sphere_group], debug=True, maximum_iterations=500)
+    res[res == float('inf')] = 0.0
+    res = res.reshape(128, 128, -1)
+    res = torch.norm(res, dim=2) / torch.max(res)
+    res *= 255
+    import matplotlib.pyplot as plot
+    plot.imshow(res)
+    plot.show()
 
 
 if __name__ == '__main__':
