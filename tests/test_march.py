@@ -1,6 +1,6 @@
 from main import march, SphereGroup
-import hypothesis
+import torch
 
 
 def test_raycast():
-    assert True
+    pass
