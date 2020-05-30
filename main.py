@@ -21,16 +21,22 @@ class SphereGroup(ObjectGroup):
         self.radii = torch.cat([self.radii, torch.Tensor([[radius]])])
 
     def nearest(self, points: torch.Tensor) -> torch.Tensor:
-        return torch.norm(self.centers - points[:, :3], dim=1) - self.radii
-
+        distances = torch.ones(points.shape[0], 1) * float('inf')
+        distances = distances
+        for i in range(self.centers.shape[0]):
+            difference = torch.norm(self.centers[i, :] - points[:, :3], dim=1)
+            tmp_distance = difference - self.radii[i, :]
+            tmp_distance = tmp_distance.reshape(points.shape[0], 1)
+            distances = torch.min(distances, tmp_distance)
+        return distances
 
 def march(origins: torch.Tensor, directions: torch.Tensor, transform: torch.Tensor, objects: List[ObjectGroup],
           epsilon=1e-2, maximum_iterations=100, debug=False):
     transformed_rays = origins @ transform
-    transformed_rays.cuda()
+    transformed_rays
     rows = transformed_rays.shape[0]
     distances = torch.ones(rows, 1) * float('inf')
-    distances.cuda()
+    distances = distances
     mask = torch.zeros(rows, 1).bool()
     if debug:
         points = transformed_rays.tolist()
@@ -60,6 +66,7 @@ def march(origins: torch.Tensor, directions: torch.Tensor, transform: torch.Tens
 def main():
     sphere_group = SphereGroup()
     sphere_group.add_sphere([0, 0, 500], 20)
+    sphere_group.add_sphere([25, 0, 500], 20)
     torch.cuda.set_device(0)
     rays = torch.Tensor([
         [x, y, 0, 1]
